@@ -1,0 +1,36 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(wordVectors)
+```
+
+```{r}
+cria_word_embedding <- function(tema, texto, path_saida, n_layers = 300){
+  
+  train_file <- paste(path_saida,tema,".csv",sep="")
+  binary_file <- paste(path_saida,tema,".bin",sep="")
+  texto %>% write_csv(train_file)
+  modelo <- train_word2vec(train_file, threads = 8, vectors = n_layers)
+  
+  file.remove(train_file)
+  ### Cria tsv com embedding
+  #path_modelo_tsv = paste(path_saida,tema,".tsv",sep="")
+  #modelo@.Data %>% as.data.frame() %>% write_tsv(path_modelo_tsv)
+  
+  #path_modelo_names_tsv = paste(path_saida,tema,"_names",".tsv",sep="")
+  #modelo@.Data %>% rownames() %>% as.data.frame() %>% write_tsv(path_modelo_names_tsv)
+  
+  return(modelo)
+}
+```
+
+```{r}
+path = "data/"
+texto = read_delim("data/LFM.byUser.txt", delim = ",", col_names = F)
+modelo = cria_word_embedding("artistas_embeddings", texto, path)
+```
+
