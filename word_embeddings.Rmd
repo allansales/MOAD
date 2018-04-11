@@ -37,6 +37,7 @@ window_size = 63489
 texto = read_delim("data/LFM.byUser.txt", delim = ",", col_names = F)
 modelo = cria_word_embedding("artistas_embeddings", texto, path, window_size)
 ```
+
 ```{r}
 # cosineSimilarity(modelo, modelo[["Pearl_Jam"]])
 
