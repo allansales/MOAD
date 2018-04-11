@@ -41,9 +41,9 @@ modelo = cria_word_embedding("artistas_embeddings", texto, path, window_size)
 ```{r}
 # cosineSimilarity(modelo, modelo[["Pearl_Jam"]])
 
-# dist = distance(file_name = "data/artistas_embeddings.bin", search_word = "Zeca_Pagodinho",num = 20)
-# 
-# dist
+dist = distance(file_name = "data/artistas_embeddings.bin", search_word = "Zeca_Pagodinho",num = 20)
+
+dist
 # 
 # word_analogy(file_name = "data/artistas_embeddings.bin", search_words = "Pink_Floyd The_Beatles Mercedes_Sosa", num = 20)
 
