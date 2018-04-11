@@ -4,17 +4,20 @@ output: html_notebook
 ---
 
 ```{r}
-library(readr)
-library(wordVectors)
+library("readr")
+library("wordVectors")
+library("rword2vec")
+
 ```
 
 ```{r}
-cria_word_embedding <- function(tema, texto, path_saida, n_layers = 300){
+cria_word_embedding <- function(tema, texto, path_saida, n_layers = 300, window_size){
   
-  train_file <- paste(path_saida,tema,".csv",sep="")
-  binary_file <- paste(path_saida,tema,".bin",sep="")
-  texto %>% write_csv(train_file)
-  modelo <- train_word2vec(train_file, threads = 8, vectors = n_layers)
+  train_file = paste(path_saida,tema,".csv",sep="")
+  binary_file = paste(path_saida,tema,".bin",sep="")
+  texto %>% write.table(train_file, row.names = F, fileEncoding = "UTF-8", quote = F, col.names = F, sep = " ")
+  
+  modelo = train_word2vec(train_file, threads = 8, vectors = n_layers, window = window_size) # Maximal 63489
   
   file.remove(train_file)
   ### Cria tsv com embedding
@@ -30,7 +33,18 @@ cria_word_embedding <- function(tema, texto, path_saida, n_layers = 300){
 
 ```{r}
 path = "data/"
+window_size = 63489
 texto = read_delim("data/LFM.byUser.txt", delim = ",", col_names = F)
-modelo = cria_word_embedding("artistas_embeddings", texto, path)
+modelo = cria_word_embedding("artistas_embeddings", texto, path, window_size)
+```
+```{r}
+# cosineSimilarity(modelo, modelo[["Pearl_Jam"]])
+
+# dist = distance(file_name = "data/artistas_embeddings.bin", search_word = "Zeca_Pagodinho",num = 20)
+# 
+# dist
+# 
+# word_analogy(file_name = "data/artistas_embeddings.bin", search_words = "Pink_Floyd The_Beatles Mercedes_Sosa", num = 20)
+
 ```
 
