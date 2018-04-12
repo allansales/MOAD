@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(readr)
+library(data.table)
+library(dplyr)
+library(stringr)
+library(wordVectors)
+library(lsa)
+library(stats)
+```
+
+
+```{r}
+
+rewrite.lfm <- function(u){
+  Iu = filter(LFM, userid == u)
+  return(as.vector(t(Iu$artistname)))
+}
+
+centroid_by_genre = function(g, we_model){
+  listG = filter(artists.by.genre, genre == g)
+  matrix_names = attr(we_model@.Data, "dimnames")[[1]]
+  we_pos = which(matrix_names %in% listG$artistname)
+  wes = we_model@.Data[we_pos,]
+  if(!is.vector(wes)){
+    wes = wes %>% colMeans()  
+  }
+  return(wes)
+}
+
+centroid_by_user = function(id, we_model){
+  #id = users[1]
+  listG = filter(LFM, userid == id) 
+  
+  matrix_names = attr(we_model@.Data, "dimnames")[[1]] %>% as.data.frame()
+  matrix_names = cbind(matrix_names,as.data.frame(c(1:nrow(matrix_names))))
+  names(matrix_names) = c("artistname","pos")
+  
+  we_pos = inner_join(matrix_names, listG) %>% select(pos)
+  
+  wes = we_model@.Data[we_pos$pos,]
+  if(!is.vector(wes)){
+    wes = wes %>% colMeans()  
+  }
+  return(wes)
+}
+
+list.artists.locality = function(l){
+  listL = filter(artists.by.locality, locality == l)
+  return(as.vector(listL$artistname))
+}
+
+```
+
+
+```{r}
+# Data Load
+artist.metadata = fread("data/artist.data.txt", 
+                        sep = ";", 
+                        na.strings = "")
+names(artist.metadata)[2] = "artistname"
+
+LFM <- fread("data/LFM.artists.available.txt",
+             sep = "\t",
+             na.strings = "")
+LFM = as.data.frame(LFM)
+names(LFM) = c("artistid", "userid", "timestamp", "country", "age", "gender", "playcount", "registered", "artistname")
+LFM[,4:8] = NULL
+
+total.plays = group_by(LFM,artistname) %>% summarise(total = n())
+artists.min5 = filter(total.plays, total >= 5) %>% select(artistname)
+
+artist.metadata = inner_join(artist.metadata, artists.min5)
+LFM = inner_join(LFM, artists.min5)
+
+model = read.binary.vectors("data/artistas_embeddings.bin")
+```
+
+
+```{r, warning=F}
+# User groups
+
+LFM = LFM[order(LFM$userid, LFM$timestamp),]
+users = unique(LFM$userid)
+LFM$artistname = str_replace_all(LFM$artistname, " ", "_")
+centroids_by_user = lapply(users, centroid_by_user, model)
+```
+
+```{r}
+# Genre group
+melt.artists = melt(artist.metadata, id.vars = c("artistname"), measure.vars = c(7:ncol(artist.metadata)))
+artists.by.genre = select(filter(melt.artists, value == 1), c(artistname,variable))
+names(artists.by.genre) = c("artistname", "genre")
+artists.by.genre$artistname = str_replace_all(artists.by.genre$artistname, " ", "_")
+
+genres = unique(artists.by.genre$genre)
+centroids_by_genre = lapply(genres, centroid_by_genre, model)
+```
+
+```{r}
+
+#localities group
+
+localities = as.list(unique(artist.metadata$area))
+artists.by.locality = select(artist.metadata, c(artistname, area))
+names(artists.by.locality) = c("artistname", "locality")
+artist.vectors.by.locality = lapply(localities, list.artists.locality)
+
+```
+
+```{r}
+cosine_similarity = function(aspect_value, user){
+  cosine(user, aspect_value)
+}
+
+user_weight = function(centroids_by_user, centroids_by_genre){
+  user_subaspects_weights = sapply(centroids_by_genre, cosine_similarity, centroids_by_user) %>% sort(decreasing = T) %>% data_frame()
+}
+
+user_weights = lapply(centroids_by_user, user_weight, centroids_by_genre) %>% bind_cols()
+user_weights = user_weights %>% as.data.frame() %>% t() %>% as.data.frame()
+```
+
+
+```{r}
+genre.cluster = kmeans(user_weights, 2)
+genre.cluster$centers
+```
+

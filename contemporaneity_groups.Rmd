@@ -1,0 +1,60 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(data.table)
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+
+decade <- function(year){
+   return (floor(year / 10) * 10)
+}
+
+artist.activity = function(a){
+  
+}
+
+list.artists.contemporaneity = function(c){
+  listL = filter(artists.by.contemporaneity, contemporaneity == c)
+  return(as.vector(listL$artistname))
+}
+
+```
+
+```{r}
+
+# Data Load
+artist.metadata = fread("/local/datasets/experimento/artist.data.txt", 
+                        sep = ";", 
+                        na.strings = "")
+# Correct data 
+artist.metadata[which(artist.metadata$artistname == "The Pains of Being Pure at Heart"),"last"] = 2017
+artist.metadata[which(artist.metadata$artistname == "Rod Stewart"),"debut"] = 1968
+
+# Convert years to decades
+artist.metadata[,"debut"] = decade(artist.metadata[,"debut"])
+artist.metadata[,"last"] = decade(artist.metadata[,"last"])
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+decades = as.list(unique(c(artist.metadata$debut, artist.metadata$last)))
+artists.by.contemporaneity = select(artist.metadata, c(artistname, debut, last))
+
+
+
+
+artist.vectors.by.locality = lapply(localities, list.artists.locality)
+```
+
