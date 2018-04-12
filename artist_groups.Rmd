@@ -12,6 +12,7 @@ library(stringr)
 library(wordVectors)
 library(lsa)
 library(stats)
+library(ggbiplot)
 ```
 
 
@@ -124,11 +125,36 @@ user_weight = function(centroids_by_user, centroids_by_genre){
 
 user_weights = lapply(centroids_by_user, user_weight, centroids_by_genre) %>% bind_cols()
 user_weights = user_weights %>% as.data.frame() %>% t() %>% as.data.frame()
+row.names(user_weights) = users
 ```
 
 
 ```{r}
 genre.cluster = kmeans(user_weights, 2)
 genre.cluster$centers
+
+```
+
+
+```{r, warning=F}
+# PCA
+
+user_weights_pca = prcomp(user_weights, center = T, scale. = T)
+# summary(user_weights_pca)
+biplot(user_weights_pca)
+
+g <- ggbiplot(user_weights_pca, obs.scale = 1, var.scale = 1, 
+              groups = genre.cluster$cluster, ellipse = TRUE, 
+              circle = TRUE)
+#g <- g + scale_color_discrete(name = '')
+g <- g + theme(legend.direction = 'horizontal', 
+               legend.position = 'top')
+print(g)
+
+```
+
+
+
+```{r}
 ```
 
